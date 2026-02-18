@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ShoppingCart, TrendingUp, AlertCircle, Plus } from "lucide-react";
+import { ShoppingCart, TrendingUp, AlertCircle, Plus, Bell } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Dashboard() {
@@ -17,6 +17,11 @@ export default function Dashboard() {
   const { data: purchaseTrends, isLoading: trendsLoading } = trpc.purchaseTrend.list.useQuery();
   const { data: supermarkets } = trpc.supermarket.list.useQuery();
   const { data: receipts } = trpc.receipt.list.useQuery();
+  const { mutate: sendTestNotification, isPending: isNotificationPending } = trpc.notification.sendTestNotification.useMutation({
+    onSuccess: (data) => {
+      alert(data.message);
+    },
+  });
 
   // Prepare chart data
   const categoryData = purchaseTrends?.reduce((acc, trend) => {
@@ -55,10 +60,16 @@ export default function Dashboard() {
               {user?.name}さんの購買傾向と特売情報を分析しています
             </p>
           </div>
-          <Button onClick={() => setLocation("/receipt/upload")} size="lg">
-            <Plus className="mr-2 h-4 w-4" />
-            レシート追加
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => sendTestNotification()} size="lg" variant="outline" disabled={isNotificationPending}>
+              <Bell className="mr-2 h-4 w-4" />
+              {isNotificationPending ? "送信中..." : "テスト通知"}
+            </Button>
+            <Button onClick={() => setLocation("/receipt/upload")} size="lg">
+              <Plus className="mr-2 h-4 w-4" />
+              レシート追加
+            </Button>
+          </div>
         </div>
 
         {/* Quick Stats */}

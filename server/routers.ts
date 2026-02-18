@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
+import { notifyOwner } from "./_core/notification";
 import { storagePut, storageGet } from "./storage";
 import * as db from "./db";
 import { AnalysisHistory } from "../drizzle/schema";
@@ -385,6 +386,28 @@ Return as JSON:
           uploadUrl: `https://storage.example.com/upload?key=${fileKey}`,
         };
       }),
+  }),
+
+  notification: router({
+    sendTestNotification: protectedProcedure.mutation(async ({ ctx }) => {
+      try {
+        const result = await notifyOwner({
+          title: "Test Notification from Budget Agent",
+          content: `User: ${ctx.user.name || ctx.user.email}\n\nThis is a test notification from the household budget agent. If you see this message, the notification system is working correctly.\n\nYou will receive weekly deal recommendations every Friday at 8 PM.`,
+        });
+        
+        return {
+          success: result,
+          message: result ? "Test notification sent successfully" : "Failed to send test notification",
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return {
+          success: false,
+          message: `Error: ${errorMessage}`,
+        };
+      }
+    }),
   }),
 });
 
