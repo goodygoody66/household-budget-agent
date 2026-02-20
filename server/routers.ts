@@ -9,6 +9,7 @@ import { storagePut, storageGet } from "./storage";
 import * as db from "./db";
 import { AnalysisHistory } from "../drizzle/schema";
 import { analyzeSmartMatching } from "./smartMatching";
+import { matchReceiptWithFlyer, generateMatchingReport } from "./receiptFlyerMatching";
 
 export const appRouter = router({
   system: systemRouter,
@@ -497,6 +498,94 @@ Return as JSON:
     }),
   }),
 
+  // Receipt Analysis
+  receiptAnalysis: router({
+    analyzeFromUrl: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string().url(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: `You are a receipt analyzer. Extract the following information from the receipt image:
+1. Store name
+2. Purchase date
+3. All items purchased with:
+   - Item name
+   - Price (individual price)
+   - Category (野菜, 肉, 魚, 乳製品, 調味料, etc.)
+   - Quantity (if shown)
+4. Total amount
+
+Return the response in JSON format with this structure:
+{
+  "storeName": "store name",
+  "purchaseDate": "YYYY-MM-DD",
+  "items": [
+    {
+      "name": "item name",
+      "price": price_number,
+      "category": "category",
+      "quantity": quantity_number
+    }
+  ],
+  "totalAmount": total_number
+}
+
+Important:
+- Extract ALL items from the receipt
+- Use Japanese category names
+- Price should be a number without currency symbol`,
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: input.imageUrl,
+                    },
+                  },
+                ] as any,
+              },
+            ],
+          });
+
+          const content = response.choices[0]?.message.content;
+          if (!content) {
+            return {
+              success: false,
+              error: "No response from LLM",
+            };
+          }
+
+          const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+          const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) {
+            return {
+              success: false,
+              error: "Could not parse JSON from response",
+            };
+          }
+
+          const analysis = JSON.parse(jsonMatch[0]);
+          return {
+            success: true,
+            analysis,
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          return {
+            success: false,
+            error: errorMessage,
+          };
+        }
+      }),
+  }),
+
   // Flyer analysis test
   flyerTest: router({
     analyzeFromUrl: protectedProcedure
@@ -585,6 +674,51 @@ Return as JSON:
           return {
             success: true,
             analysis: analysisResult,
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          return {
+            success: false,
+            error: errorMessage,
+          };
+        }
+      }),
+  }),
+
+  receiptFlyerMatching: router({
+    match: protectedProcedure
+      .input(z.object({
+        receiptItems: z.array(z.object({
+          name: z.string(),
+          price: z.number(),
+          category: z.string(),
+          quantity: z.number().optional(),
+        })),
+        flyerItems: z.array(z.object({
+          name: z.string(),
+          regularPrice: z.number().optional(),
+          salePrice: z.number(),
+          discountPercentage: z.number().optional(),
+          category: z.string(),
+          storeName: z.string(),
+          salePeriod: z.string().optional(),
+        })),
+        similarityThreshold: z.number().min(0).max(1).default(0.6),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = matchReceiptWithFlyer(
+            input.receiptItems,
+            input.flyerItems,
+            input.similarityThreshold
+          );
+
+          const report = generateMatchingReport(result);
+
+          return {
+            success: true,
+            result,
+            report,
           };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Unknown error";
