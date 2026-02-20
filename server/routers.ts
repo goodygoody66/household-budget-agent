@@ -10,6 +10,7 @@ import * as db from "./db";
 import { AnalysisHistory } from "../drizzle/schema";
 import { analyzeSmartMatching } from "./smartMatching";
 import { matchReceiptWithFlyer, generateMatchingReport } from "./receiptFlyerMatching";
+import { generateMatchingNotificationData, generateNotificationHTML, generateNotificationText } from "./notificationGenerator";
 
 export const appRouter = router({
   system: systemRouter,
@@ -410,6 +411,35 @@ Return as JSON:
         };
       }
     }),
+
+    sendMatchingNotification: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        try {
+          const notificationData = generateMatchingNotificationData();
+          const htmlContent = generateNotificationHTML(notificationData);
+          const textContent = generateNotificationText(notificationData);
+          
+          const result = await notifyOwner({
+            title: `Shopping Deal Alert - Save ¥${notificationData.totalSavings.toLocaleString()}!`,
+            content: textContent,
+          });
+
+          return {
+            success: result,
+            data: {
+              notificationData,
+              htmlContent,
+              textContent,
+            },
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          return {
+            success: false,
+            error: errorMessage,
+          };
+        }
+      }),
   }),
 
   // Smart Matching Analysis
@@ -727,8 +757,7 @@ Return as JSON:
             error: errorMessage,
           };
         }
-      }),
+       }),
   }),
 });
-
 export type AppRouter = typeof appRouter;
