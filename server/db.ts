@@ -206,3 +206,70 @@ export async function updateAnalysisHistory(id: number, data: Partial<InsertAnal
   if (!db) throw new Error("Database not available");
   await db.update(analysisHistory).set(data).where(eq(analysisHistory.id, id));
 }
+
+
+// Smart Matching Analysis queries
+export async function getSmartMatchingAnalysis(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get user's purchase trends
+  const userPurchaseTrends = await db.select().from(purchaseTrends).where(eq(purchaseTrends.userId, userId));
+
+  // Get user's receipts
+  const userReceipts = await db.select().from(receipts).where(eq(receipts.userId, userId));
+
+  // Get user's matching results
+  const userMatchingResults = await db.select().from(matchingResults).where(eq(matchingResults.userId, userId)).orderBy(desc(matchingResults.createdAt));
+
+  return {
+    purchaseTrends: userPurchaseTrends,
+    receipts: userReceipts,
+    matchingResults: userMatchingResults,
+  };
+}
+
+export async function getPurchasedCategoriesForUser(userId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const trends = await db.select().from(purchaseTrends).where(eq(purchaseTrends.userId, userId));
+  const categories = trends.map(t => t.category).filter(Boolean);
+  return Array.from(new Set(categories));
+}
+
+export async function createSmartMatchingReport(data: {
+  userId: number;
+  matchedItems: Array<{
+    itemName: string;
+    category: string;
+    regularPrice?: number | null;
+    salePrice: number;
+    discount?: number | null;
+    userAveragePrice?: number | null;
+    savingsAmount: number;
+    savingsPercentage: number;
+    purchaseFrequency: number;
+    matchScore: number;
+  }>;
+  excludedCategories: string[];
+  totalSavings: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Save as analysis history
+  await db.insert(analysisHistory).values({
+    userId: data.userId,
+    analysisType: "matching",
+    status: "completed",
+    result: {
+      matchedItems: data.matchedItems,
+      excludedCategories: data.excludedCategories,
+      totalSavings: data.totalSavings,
+      matchedCount: data.matchedItems.length,
+      excludedCategoryCount: data.excludedCategories.length,
+    },
+    completedAt: new Date(),
+  });
+}

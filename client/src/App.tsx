@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import ReceiptUpload from "./pages/ReceiptUpload";
 import SupermarketManagement from "./pages/SupermarketManagement";
 import { FlyerAnalysisTest } from "./pages/FlyerAnalysisTest";
+import { SmartMatchingReport } from "./pages/SmartMatchingReport";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/receipt/upload"} component={ReceiptUpload} />
       <Route path={"/supermarket"} component={SupermarketManagement} />
       <Route path={"/flyer-test"} component={FlyerAnalysisTest} />
+      <Route path={"/smart-matching"} component={SmartMatchingReport} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

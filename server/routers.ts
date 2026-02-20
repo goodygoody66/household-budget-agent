@@ -8,6 +8,7 @@ import { notifyOwner } from "./_core/notification";
 import { storagePut, storageGet } from "./storage";
 import * as db from "./db";
 import { AnalysisHistory } from "../drizzle/schema";
+import { analyzeSmartMatching } from "./smartMatching";
 
 export const appRouter = router({
   system: systemRouter,
@@ -405,6 +406,92 @@ Return as JSON:
         return {
           success: false,
           message: `Error: ${errorMessage}`,
+        };
+      }
+    }),
+  }),
+
+  // Smart Matching Analysis
+  smartMatching: router({
+    analyze: protectedProcedure
+      .input(z.object({
+        flyerId: z.number().optional(),
+        flyerItems: z.array(z.object({
+          name: z.string(),
+          regularPrice: z.number().optional().nullable(),
+          salePrice: z.number(),
+          discount: z.number().optional().nullable(),
+          category: z.string(),
+        })).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const purchaseTrends = await db.getUserPurchaseTrends(ctx.user.id);
+          const purchasedCategories = await db.getPurchasedCategoriesForUser(ctx.user.id);
+
+          let flyerItems = input.flyerItems || [];
+
+          if (input.flyerId && !flyerItems.length) {
+            const flyers = await db.getSupermarketFlyers(input.flyerId);
+            if (flyers.length > 0) {
+              const flyerData = flyers[0];
+              if (flyerData.items && typeof flyerData.items === 'object') {
+                flyerItems = (flyerData.items as any[]).map(item => ({
+                  name: item.name || '',
+                  regularPrice: item.regularPrice || null,
+                  salePrice: item.salePrice || 0,
+                  discount: item.discount || null,
+                  category: item.category || '',
+                }));
+              }
+            }
+          }
+
+          const purchasedItems = purchaseTrends.map(trend => ({
+            itemName: trend.itemName,
+            category: trend.category,
+            averagePrice: trend.averagePrice ? parseFloat(trend.averagePrice.toString()) : null,
+            purchaseCount: trend.purchaseCount || 0,
+          }));
+
+          const result = analyzeSmartMatching(
+            flyerItems,
+            purchasedItems,
+            purchasedCategories
+          );
+
+          await db.createSmartMatchingReport({
+            userId: ctx.user.id,
+            matchedItems: result.matchedItems,
+            excludedCategories: result.excludedCategories,
+            totalSavings: result.totalSavings,
+          });
+
+          return {
+            success: true,
+            analysis: result,
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          return {
+            success: false,
+            error: errorMessage,
+          };
+        }
+      }),
+
+    getReport: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const analysis = await db.getSmartMatchingAnalysis(ctx.user.id);
+        return {
+          success: true,
+          analysis,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return {
+          success: false,
+          error: errorMessage,
         };
       }
     }),
