@@ -409,6 +409,105 @@ Return as JSON:
       }
     }),
   }),
+
+  // Flyer analysis test
+  flyerTest: router({
+    analyzeFromUrl: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string().url(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Call LLM to analyze flyer from URL
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: `You are a supermarket flyer analyzer. Extract sale items from the flyer image:
+1. Product name
+2. Regular price (if shown)
+3. Sale price
+4. Discount percentage
+5. Category (produce, meat, fish, dairy, beverages, snacks, etc.)
+6. Store name (if visible)
+7. Sale period (if shown)
+
+Return as JSON:
+{
+  "storeName": "store name",
+  "salePeriod": "period",
+  "items": [
+    { "name": "product", "regularPrice": number, "salePrice": number, "discount": number, "category": "category" }
+  ]
+}`,
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "Analyze this supermarket flyer image and extract all sale items with prices and information.",
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: input.imageUrl,
+                      detail: "high",
+                    },
+                  },
+                ],
+              },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "flyer_analysis_test",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    storeName: { type: "string" },
+                    salePeriod: { type: "string" },
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          regularPrice: { type: ["number", "null"] },
+                          salePrice: { type: "number" },
+                          discount: { type: ["number", "null"] },
+                          category: { type: "string" },
+                        },
+                        required: ["name", "salePrice", "category"],
+                      },
+                    },
+                  },
+                  required: ["items"],
+                },
+              },
+            },
+          });
+
+          const analysisResult = JSON.parse(
+            typeof response.choices[0].message.content === "string"
+              ? response.choices[0].message.content
+              : "{}"
+          );
+
+          return {
+            success: true,
+            analysis: analysisResult,
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          return {
+            success: false,
+            error: errorMessage,
+          };
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
