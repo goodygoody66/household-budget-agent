@@ -5,23 +5,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function NotificationTest() {
+  const { data: user, isLoading: authLoading } = trpc.auth.me.useQuery();
   const [testNotificationResult, setTestNotificationResult] = useState<any>(null);
   const [matchingNotificationResult, setMatchingNotificationResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendTestNotification = trpc.notification.sendTestNotification.useMutation();
-  const sendMatchingNotification = trpc.notification.sendMatchingNotification.useMutation();
+  const sendTestNotification = trpc.notification.sendTestNotification.useMutation({
+    onSuccess: (data) => {
+      setTestNotificationResult(data);
+      setError(null);
+    },
+    onError: (err) => {
+      setError(err.message || "テスト通知の送信に失敗しました");
+    },
+  });
+
+  const sendMatchingNotification = trpc.notification.sendMatchingNotification.useMutation({
+    onSuccess: (data) => {
+      setMatchingNotificationResult(data);
+      setError(null);
+    },
+    onError: (err) => {
+      setError(err.message || "スマートマッチング通知の送信に失敗しました");
+    },
+  });
 
   const handleSendTestNotification = async () => {
     setIsLoading(true);
-    setError(null);
     try {
-      const result = await sendTestNotification.mutateAsync();
-      setTestNotificationResult(result);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "不明なエラー";
-      setError(errorMessage);
+      await sendTestNotification.mutateAsync();
     } finally {
       setIsLoading(false);
     }
@@ -29,20 +42,40 @@ export function NotificationTest() {
 
   const handleSendMatchingNotification = async () => {
     setIsLoading(true);
-    setError(null);
     try {
-      const result = await sendMatchingNotification.mutateAsync();
-      setMatchingNotificationResult(result);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "不明なエラー";
-      setError(errorMessage);
+      await sendMatchingNotification.mutateAsync();
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (!user && !authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>認証が必要です</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">
+              このページにアクセスするにはログインが必要です。
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle>通知テスト</CardTitle>
@@ -52,29 +85,31 @@ export function NotificationTest() {
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Button
           onClick={handleSendTestNotification}
-          disabled={isLoading}
+          disabled={isLoading || sendTestNotification.isPending}
           variant="outline"
           size="lg"
+          className="w-full"
         >
-          {isLoading ? "送信中..." : "テスト通知を送信"}
+          {sendTestNotification.isPending ? "送信中..." : "テスト通知を送信"}
         </Button>
 
         <Button
           onClick={handleSendMatchingNotification}
-          disabled={isLoading}
+          disabled={isLoading || sendMatchingNotification.isPending}
           size="lg"
-          className="bg-green-600 hover:bg-green-700"
+          className="w-full bg-green-600 hover:bg-green-700"
         >
-          {isLoading ? "送信中..." : "スマートマッチング通知を送信"}
+          {sendMatchingNotification.isPending ? "送信中..." : "スマートマッチング通知を送信"}
         </Button>
       </div>
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
-          {error}
+          <p className="font-semibold">エラー</p>
+          <p className="text-sm mt-1">{error}</p>
         </div>
       )}
 
@@ -93,7 +128,7 @@ export function NotificationTest() {
               </div>
               <div>
                 <p className="text-sm font-semibold mb-2">メッセージ</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
                   {testNotificationResult.message}
                 </p>
               </div>
@@ -125,8 +160,8 @@ export function NotificationTest() {
                       <TabsTrigger value="html">HTML</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="summary" className="space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
+                    <TabsContent value="summary" className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-4 bg-blue-50 rounded">
                           <div className="text-sm text-gray-600">合計節約額</div>
                           <div className="text-2xl font-bold text-blue-600">
@@ -149,15 +184,15 @@ export function NotificationTest() {
 
                       <div>
                         <h3 className="font-semibold mb-2">マッチ商品</h3>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
                           {matchingNotificationResult.data.notificationData.matchedItems.map(
                             (item: any, idx: number) => (
-                              <div key={idx} className="p-3 bg-gray-50 rounded text-sm">
-                                <p className="font-medium">{item.receiptItemName}</p>
-                                <p className="text-gray-600">
+                              <div key={idx} className="p-3 bg-gray-50 rounded text-sm border border-gray-200">
+                                <p className="font-medium text-gray-900">{item.receiptItemName}</p>
+                                <p className="text-gray-600 text-xs mt-1">
                                   ¥{item.receiptPrice} → ¥{item.flyerPrice} (節約: ¥{item.savingsAmount})
                                 </p>
-                                <p className="text-xs text-gray-500">{item.storeName}</p>
+                                <p className="text-xs text-gray-500 mt-1">{item.storeName}</p>
                               </div>
                             )
                           )}
@@ -165,20 +200,21 @@ export function NotificationTest() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="text" className="space-y-4">
-                      <div className="p-4 bg-gray-50 rounded border border-gray-200">
-                        <pre className="text-xs whitespace-pre-wrap text-gray-700 font-mono">
+                    <TabsContent value="text" className="space-y-4 mt-4">
+                      <div className="p-4 bg-gray-50 rounded border border-gray-200 max-h-96 overflow-y-auto">
+                        <pre className="text-xs whitespace-pre-wrap text-gray-700 font-mono break-words">
                           {matchingNotificationResult.data.textContent}
                         </pre>
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="html" className="space-y-4">
+                    <TabsContent value="html" className="space-y-4 mt-4">
                       <div className="p-4 bg-gray-50 rounded border border-gray-200 max-h-96 overflow-y-auto">
                         <iframe
                           srcDoc={matchingNotificationResult.data.htmlContent}
-                          className="w-full h-96 border-0"
+                          className="w-full h-96 border-0 rounded"
                           title="HTML Preview"
+                          sandbox="allow-same-origin"
                         />
                       </div>
                       <div className="text-xs text-gray-500">
