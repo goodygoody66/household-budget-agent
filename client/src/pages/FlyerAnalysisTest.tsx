@@ -34,8 +34,8 @@ export function FlyerAnalysisTest() {
     setError(null);
     try {
       const result = await analyzeMutation.mutateAsync({ imageUrl });
-      if (result.success && result.analysis) {
-        setAnalysisResult(result.analysis);
+      if (result.success && result.data) {
+        setAnalysisResult(result.data);
       } else {
         setError(result.error || "分析に失敗しました");
       }

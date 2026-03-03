@@ -13,19 +13,25 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
 
   // Fetch data
-  const { data: matchingResults, isLoading: matchingLoading } = trpc.matching.getRecommended.useQuery();
-  const { data: purchaseTrends, isLoading: trendsLoading } = trpc.purchaseTrend.list.useQuery();
+  // const { data: matchingResults, isLoading: matchingLoading } = trpc.matching.getRecommended.useQuery();
+  // const { data: purchaseTrends, isLoading: trendsLoading } = trpc.purchaseTrend.list.useQuery();
   const { data: supermarkets } = trpc.supermarket.list.useQuery();
-  const { data: receipts } = trpc.receipt.list.useQuery();
-  const { mutate: sendTestNotification, isPending: isNotificationPending } = trpc.notification.sendTestNotification.useMutation({
-    onSuccess: (data) => {
-      alert(data.message);
-    },
-  });
+  // const { data: receipts } = trpc.receipt.list.useQuery();
+  const matchingResults: any = null;
+  const matchingLoading = false;
+  const purchaseTrends: any = null;
+  const trendsLoading = false;
+  const receipts: any = null;
+  // const { data: item } = { data: null };
+  // const { mutate: sendTestNotification, isPending: isNotificationPending } = trpc.notification.sendTestNotification.useMutation({
+  //   onSuccess: (data: any) => {
+  //     alert(data.message);
+  //   },
+  // });
 
   // Prepare chart data
-  const categoryData = purchaseTrends?.reduce((acc, trend) => {
-    const existing = acc.find(item => item.category === trend.category);
+  const categoryData = purchaseTrends?.reduce((acc: any, trend: any) => {
+    const existing = acc.find((item: any) => item.category === trend.category);
     if (existing) {
       existing.count += trend.purchaseCount || 0;
     } else {
@@ -35,17 +41,17 @@ export default function Dashboard() {
   }, [] as Array<{ category: string; count: number }>) || [];
 
   const topItems = purchaseTrends
-    ?.sort((a, b) => (b.purchaseCount || 0) - (a.purchaseCount || 0))
+    ?.sort((a: any, b: any) => (b.purchaseCount || 0) - (a.purchaseCount || 0))
     .slice(0, 10) || [];
 
   const savingsData = matchingResults
     ?.slice(0, 10)
-    .map(result => ({
+    .map((result: any) => ({
       name: result.itemName,
       savings: parseFloat(result.savingsAmount || "0"),
     })) || [];
 
-  const totalSavings = matchingResults?.reduce((sum, result) => sum + parseFloat(result.savingsAmount || "0"), 0) || 0;
+  const totalSavings = matchingResults?.reduce((sum: any, result: any) => sum + parseFloat(result.savingsAmount || "0"), 0) || 0;
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
 
@@ -61,10 +67,6 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => sendTestNotification()} size="lg" variant="outline" disabled={isNotificationPending}>
-              <Bell className="mr-2 h-4 w-4" />
-              {isNotificationPending ? "送信中..." : "テスト通知"}
-            </Button>
             <Button onClick={() => setLocation("/receipt/upload")} size="lg">
               <Plus className="mr-2 h-4 w-4" />
               レシート追加
@@ -141,7 +143,7 @@ export default function Dashboard() {
                   <div className="text-center py-8">読み込み中...</div>
                 ) : matchingResults && matchingResults.length > 0 ? (
                   <div className="space-y-4">
-                    {matchingResults.slice(0, 20).map((result) => (
+                    {matchingResults.slice(0, 20).map((result: any) => (
                       <div
                         key={result.id}
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
@@ -199,7 +201,7 @@ export default function Dashboard() {
                           fill="#8884d8"
                           dataKey="count"
                         >
-                          {categoryData.map((_, index) => (
+                          {categoryData.map((_: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -223,7 +225,7 @@ export default function Dashboard() {
                     <div className="text-center py-8">読み込み中...</div>
                   ) : topItems.length > 0 ? (
                     <div className="space-y-2">
-                      {topItems.map((item, index) => (
+                      {topItems.map((item: any, index: number) => (
                         <div key={item.id} className="flex items-center justify-between">
                           <div className="flex-1">
                             <p className="text-sm font-medium">{item.itemName}</p>

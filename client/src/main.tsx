@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
+import { getLocalAuthQueryParam } from "./lib/localAuth";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -40,7 +41,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: `/api/trpc${getLocalAuthQueryParam()}`,
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {

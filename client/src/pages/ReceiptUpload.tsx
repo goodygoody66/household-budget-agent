@@ -18,14 +18,14 @@ export default function ReceiptUpload() {
   const [preview, setPreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const analyzeReceipt = trpc.receipt.analyze.useMutation({
+  const analyzeReceipt = trpc.receiptAnalysis.analyzeFromUrl.useMutation({
     onSuccess: () => {
       toast.success("レシートを分析しました！");
       setFile(null);
       setPreview(null);
       setTimeout(() => setLocation("/dashboard"), 1500);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`分析に失敗しました: ${error.message}`);
     },
   });
@@ -75,7 +75,6 @@ export default function ReceiptUpload() {
       // Analyze receipt
       await analyzeReceipt.mutateAsync({
         imageUrl,
-        imageKey,
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "エラーが発生しました");

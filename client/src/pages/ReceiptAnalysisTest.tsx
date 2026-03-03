@@ -53,8 +53,8 @@ export function ReceiptAnalysisTest() {
         imageUrl: receiptUrl,
       });
 
-      if (result.success && result.analysis) {
-        setAnalysisResults(prev => [...prev, result.analysis]);
+      if (result.success && result.data) {
+        setAnalysisResults(prev => [...prev, result.data]);
       } else {
         setError(result.error || "分析に失敗しました");
       }
@@ -77,8 +77,8 @@ export function ReceiptAnalysisTest() {
           imageUrl: receipt.url,
         });
 
-        if (result.success && result.analysis) {
-          setAnalysisResults(prev => [...prev, result.analysis]);
+        if (result.success && result.data) {
+          setAnalysisResults(prev => [...prev, result.data]);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "不明なエラー";

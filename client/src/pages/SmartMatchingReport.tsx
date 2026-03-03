@@ -38,11 +38,12 @@ export function SmartMatchingReport() {
     setError(null);
     try {
       const analysisResult = await analyzeMutation.mutateAsync({
+        purchaseItems: [],
         flyerItems: flyerItems,
       });
 
       if (analysisResult.success && analysisResult.analysis) {
-        setResult(analysisResult.analysis);
+        setResult(analysisResult.analysis as AnalysisResult);
       } else {
         setError(analysisResult.error || "分析に失敗しました");
       }
