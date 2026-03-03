@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO supermarkets (userId, name, region, tokubaiUrl, shufooUrl, otherChirashiUrl, isActive, createdAt, updatedAt) VALUES \n(1, 'フィール野田店', '愛知県名古屋市中川区', 'https://tokubai.co.jp/フィール/428', NULL, NULL, 1, NOW(), NOW()),\n(1, 'ベイシア名古屋港', '愛知県名古屋市港区', 'https://tokubai.co.jp/ベイシアフードセンター/4012', NULL, NULL, 1, NOW(), NOW()),\n(1, '業務スーパー黄金店', '愛知県名古屋市中村区', NULL, NULL, NULL, 1, NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UUBpfpuJEgzYvj.root --database Mm8dCSeSbPWvXP5UXLQGKD --execute INSERT INTO supermarkets (userId, name, region, tokubaiUrl, shufooUrl, otherChirashiUrl, isActive, createdAt, updatedAt) VALUES \n(1, 'フィール野田店', '愛知県名古屋市中川区', 'https://tokubai.co.jp/フィール/428', NULL, NULL, 1, NOW(), NOW()),\n(1, 'ベイシア名古屋港', '愛知県名古屋市港区', 'https://tokubai.co.jp/ベイシアフードセンター/4012', NULL, NULL, 1, NOW(), NOW()),\n(1, '業務スーパー黄金店', '愛知県名古屋市中村区', NULL, NULL, NULL, 1, NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1643
+}

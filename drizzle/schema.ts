@@ -152,3 +152,36 @@ export const analysisHistory = mysqlTable("analysisHistory", {
 
 export type AnalysisHistory = typeof analysisHistory.$inferSelect;
 export type InsertAnalysisHistory = typeof analysisHistory.$inferInsert;
+
+/**
+ * LINE User ID マッピングテーブル
+ * ユーザーのLINE User IDを保存して複数デバイス・複数ユーザー対応を実現
+ */
+export const lineUserMappings = mysqlTable("lineUserMappings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  lineUserId: varchar("lineUserId", { length: 255 }).notNull().unique(),
+  displayName: varchar("displayName", { length: 255 }),
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LineUserMapping = typeof lineUserMappings.$inferSelect;
+export type InsertLineUserMapping = typeof lineUserMappings.$inferInsert;
+
+/**
+ * チラシ根拠情報テーブル
+ * マッチング結果の根拠となるチラシ画像の切り抜きなどを保存
+ */
+export const flyerEvidences = mysqlTable("flyerEvidences", {
+  id: int("id").autoincrement().primaryKey(),
+  matchingResultId: int("matchingResultId").notNull(),
+  evidenceImageUrl: varchar("evidenceImageUrl", { length: 512 }).notNull(),
+  evidenceImageKey: varchar("evidenceImageKey", { length: 512 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FlyerEvidence = typeof flyerEvidences.$inferSelect;
+export type InsertFlyerEvidence = typeof flyerEvidences.$inferInsert;

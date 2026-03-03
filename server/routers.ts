@@ -10,9 +10,11 @@ import { analyzeSmartMatching } from "./smartMatching";
 import { matchReceiptWithFlyer, generateMatchingReport } from "./receiptFlyerMatching";
 import { generateMatchingNotificationData, generateNotificationText } from "./notificationGenerator";
 import { generateRealMatchingReport } from "./realDataMatching";
+import { lineRouter } from "./lineRouter";
 
 export const appRouter = router({
   system: systemRouter,
+  line: lineRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
